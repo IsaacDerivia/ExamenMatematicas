@@ -1,16 +1,12 @@
 import re  # Librería para trabajar con expresiones regulares, útil para buscar y manipular cadenas de texto.
 import random  # Librería para generar números aleatorios y seleccionar elementos aleatoriamente.
 from collections import defaultdict  # Librería para crear diccionarios con valores por defecto.
-from nltk.corpus import wordnet
-
+import webbrowser  # Librería para abrir enlaces en el navegador predeterminado.
+from symspellpy.symspellpy import SymSpell, Verbosity  # Librería para corrección ortográfica.
 
 
 # Definición del alfabeto en mayúsculas y minúsculas
 alfabeto = [[chr(65 + i) for i in range(26)], [chr(97 + i) for i in range(26)]]
-
-# Descargar datos de WordNet ()
-import nltk
-nltk.download('wordnet')
 
 # Diccionarios para almacenar diferentes tipos de palabras
 diccionarios = defaultdict(list)
@@ -18,29 +14,56 @@ diccionarios = defaultdict(list)
 # Lista de colores reconocidos
 colores_reconocidos = ["rojo", "verde", "azul", "amarillo", "naranja", "morado", "negro", "blanco", "gris"]
 
-def obtener_definicion(palabra):
-    """
-    Función para obtener la definición de una palabra (simulada).
-
-    Args:
-        palabra (str): La palabra para la cual se desea obtener la definición.
-
-    Returns:
-        str: Definición simulada de la palabra.
-    """
-    return f"Definición simulada de '{palabra}'."
 
 def corregir_palabra(palabra):
-    """
-    Función para sugerir correcciones de una palabra (simulada).
 
-    Args:
-        palabra (str): La palabra que se desea corregir.
-
-    Returns:
-        str: Sugerencia de corrección de la palabra.
-    """
     return f"Sugerencia: '{palabra}' podría corregirse como '{palabra[::-1]}' (simulación)."
+
+
+def abrir_enlace_dle(palabra):
+    """
+    Abre el enlace del DLE en el navegador predeterminado con la palabra ingresada.
+    """
+    url = f"https://dle.rae.es/{palabra}"
+    try:
+        print(f"Abriendo el enlace: {url}")
+        webbrowser.open(url)  # Abre la URL en el navegador predeterminado
+    except Exception as e:
+        print(f"Error al intentar abrir el navegador: {e}")
+
+#inicializar symspell/diccionario de palabras
+def inicializar_symspell():
+    """
+    Configura y carga el diccionario de SymSpell.
+    """
+    # Inicializar SymSpell
+    max_edit_distance = 2  # Número máximo de ediciones permitidas
+    prefix_length = 7
+    sym_spell = SymSpell(max_edit_distance, prefix_length)
+
+    # Cargar el diccionario de palabras
+    dictionary_path = "es_50k.txt"  # Archivo diccionario
+    term_index = 0  # La columna 0 contiene las palabras
+    count_index = 1  # La columna 1 contiene las frecuencias
+    if not sym_spell.load_dictionary(dictionary_path, term_index, count_index):
+        print("No se pudo cargar el diccionario.")
+
+    return sym_spell
+
+
+# Inicializar SymSpell
+sym_spell = inicializar_symspell()
+
+def corregir_palabra_symspell(palabra):
+
+    # Buscar las mejores coincidencias
+    sugerencias = sym_spell.lookup(palabra, Verbosity.CLOSEST, max_edit_distance=2)
+
+    if sugerencias:
+        return f"Sugerencias para '{palabra}': {', '.join([s.term for s in sugerencias])}"
+    else:
+        return f"No se encontraron sugerencias para '{palabra}'."
+
 
 # Matriz de saludos y frases favoritas
 saludos = defaultdict(list)
@@ -57,9 +80,6 @@ while True:
         break
     else:
         print("La frase no puede estar vacía. Inténtalo de nuevo.")
-
-# Función para obtener la definición usando PyDictionary
-
 
 # Menú principal
 while True:
@@ -88,14 +108,14 @@ while True:
         # Solicitar definición de una palabra
         palabra = input("Escribe la palabra para definir: ").strip()
         if palabra:
-            print(obtener_definicion(palabra))
+            abrir_enlace_dle(palabra)
         else:
             print("No ingresaste ninguna palabra.")
 
     elif opcion == "3":
         # Corregir una palabra
         palabra = input("Escribe la palabra a corregir: ").strip()
-        print(corregir_palabra(palabra))
+        print(corregir_palabra_symspell(palabra))
 
     elif opcion == "4":
         # Registrar un saludo
